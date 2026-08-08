@@ -126,8 +126,8 @@ async def process_emails(emails: List[EmailInput], candidate_id: str, db: AsyncS
 
                     tasks_updated += 1
                 else:
-                    task_id = generate_task_id()
-                    new_task = TaskModel(
+                task_id = generate_task_id()
+                new_task = TaskModel(
                         task_id=task_id,
                         candidate_id=candidate_id,
                         source_email_id=email.email_id,
