@@ -3,6 +3,7 @@ from typing import List
 
 class Settings(BaseSettings):
     GEMINI_API_KEY: str = ""
+    GEMINI_MODEL: str = ""  # optional pin; empty = auto-fallback chain
     CANDIDATE_ID: str = "priya.sharma@gmail.com"
     DATABASE_URL: str = "sqlite+aiosqlite:///./data/tasks.db"
     CORS_ORIGINS: List[str] = [

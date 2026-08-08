@@ -2,12 +2,9 @@ import json
 from typing import Dict, Any, List, Optional
 from sqlalchemy import select, func, and_
 from sqlalchemy.ext.asyncio import AsyncSession
-from google import genai
-from config import settings
 from models import TaskModel, EmailModel, ThreadModel
 from schemas import ChatRequest, ChatResponse
-
-client = genai.Client(api_key=settings.GEMINI_API_KEY)
+from classification import generate_text
 
 GROUNDING_PROMPT = """You are an assistant answering questions about processed emails for a B2B services company.
 
@@ -48,15 +45,7 @@ Possible intents:
 Return JSON: {{"intent": "...", "filters": {{...}}, "category": "...", "assignee": "..."}}"""
 
     try:
-        response = client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=prompt,
-            config=genai.types.GenerateContentConfig(
-                temperature=0,
-                max_output_tokens=256,
-            ),
-        )
-        text = response.text.strip()
+        text = (await generate_text(prompt, max_output_tokens=256)).strip()
         if text.startswith("```"):
             text = text.split("\n", 1)[1].rsplit("```", 1)[0].strip()
         return json.loads(text)
@@ -218,15 +207,7 @@ async def format_answer(question: str, data: Dict[str, Any], intent: Dict[str, A
     )
     
     try:
-        response = client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=prompt,
-            config=genai.types.GenerateContentConfig(
-                temperature=0,
-                max_output_tokens=512,
-            ),
-        )
-        return response.text.strip()
+        return (await generate_text(prompt, max_output_tokens=512)).strip()
     except Exception:
         if data:
             return f"Based on the data: {json.dumps(data)}"

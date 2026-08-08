@@ -1,11 +1,56 @@
 import json
 import os
 import re
+import asyncio
 from typing import Optional, Dict, Any
 from google import genai
 from config import settings
 
 client = genai.Client(api_key=settings.GEMINI_API_KEY)
+
+# Model fallback chain: newer models first. 404 = model retired for this account,
+# move to the next candidate. Set GEMINI_MODEL env var to pin a specific model
+# (comma-separated values are tried in order).
+GEMINI_MODEL_CANDIDATES = [
+    "gemini-3-flash",
+    "gemini-3-flash-preview",
+    "gemini-2.5-flash-lite",
+    "gemini-2.0-flash",
+    "gemini-2.5-flash",
+]
+
+
+async def generate_text(prompt: str, max_output_tokens: int = 1024) -> str:
+    """Call Gemini with model fallback + bounded 429 retries (respects RetryInfo delay)."""
+    candidates = [m.strip() for m in (settings.GEMINI_MODEL or "").split(",") if m.strip()] + GEMINI_MODEL_CANDIDATES
+    last_error = None
+    for model in candidates:
+        for attempt in range(3):
+            try:
+                response = client.models.generate_content(
+                    model=model,
+                    contents=prompt,
+                    config=genai.types.GenerateContentConfig(
+                        temperature=0,
+                        max_output_tokens=max_output_tokens,
+                    ),
+                )
+                return response.text
+            except Exception as e:
+                last_error = e
+                err = str(e)
+                if "404" in err or "NOT_FOUND" in err or "no longer available" in err:
+                    print(f"Gemini model '{model}' unavailable, trying next: {err[:120]}", flush=True)
+                    break  # move to next candidate model
+                if "429" in err or "RESOURCE_EXHAUSTED" in err or "quota" in err.lower():
+                    match = re.search(r"retry in ([\d.]+)s", err)
+                    delay = min(float(match.group(1)) if match else 30.0, 30.0)
+                    print(f"Gemini rate-limited on '{model}', retry in {delay:.0f}s: {err[:120]}", flush=True)
+                    await asyncio.sleep(delay)
+                    continue
+                print(f"Gemini error on '{model}': {err[:120]}", flush=True)
+                break  # non-retryable, try next model
+    raise RuntimeError(f"All Gemini models failed. Last error: {last_error}")
 
 CLASSIFICATION_PROMPT = """You are an expert email classifier for a B2B services company in India.
 
@@ -143,16 +188,7 @@ async def classify_email(email_data: dict) -> dict:
     )
 
     try:
-        response = client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=prompt,
-            config=genai.types.GenerateContentConfig(
-                temperature=0,
-                max_output_tokens=1024,
-            ),
-        )
-
-        text = response.text.strip()
+        text = (await generate_text(prompt, max_output_tokens=1024)).strip()
         if text.startswith("```"):
             text = text.split("\n", 1)[1].rsplit("```", 1)[0].strip()
 
