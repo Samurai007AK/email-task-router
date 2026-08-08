@@ -7,6 +7,7 @@ const base = {
   strokeLinecap: 'round',
   strokeLinejoin: 'round',
   viewBox: '0 0 24 24',
+  'aria-hidden': 'true',
 }
 
 export const IconInbox = ({ className = 'h-4 w-4' }) => (

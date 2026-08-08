@@ -155,6 +155,7 @@ function DashboardTab({ apiBase }) {
         <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-2 backdrop-blur-sm">
           <span className="text-sm text-slate-400">Filter by assignee</span>
           <select
+            aria-label="Filter by assignee"
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
             className="cursor-pointer rounded-lg border border-white/10 bg-[#0b0b1a] px-3 py-1 text-sm text-slate-200 outline-none transition-colors hover:border-white/25 focus:border-violet-400/60"

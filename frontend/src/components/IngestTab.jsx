@@ -17,19 +17,6 @@ import {
 } from './ui/Icons'
 
 function generateSampleEmails() {
-  const categories = [
-    { type: 'rfp', weight: 30 },
-    { type: 'smb', weight: 25 },
-    { type: 'marketing', weight: 20 },
-    { type: 'alliances', weight: 15 },
-    { type: 'finance', weight: 20 },
-    { type: 'ooo', weight: 20 },
-    { type: 'newsletter', weight: 25 },
-    { type: 'spam', weight: 25 },
-    { type: 'triage', weight: 10 },
-    { type: 'hinglish', weight: 10 },
-  ]
-
   const companies = [
     { name: 'Meridian Steel', domain: 'meridiansteel.co.in', type: 'enterprise' },
     { name: 'Railyard Logistics', domain: 'railyardlogistics.in', type: 'smb' },
@@ -268,10 +255,6 @@ function generateSampleEmails() {
 
   function pickRandom(arr) {
     return arr[Math.floor(Math.random() * arr.length)]
-  }
-  function pickRandomN(arr, n) {
-    const shuffled = [...arr].sort(() => 0.5 - Math.random())
-    return shuffled.slice(0, n)
   }
 
   const emails = []

@@ -17,7 +17,6 @@ const TABS = [
 
 function App() {
   const [activeTab, setActiveTab] = useState('ingest')
-  const [ingestResult, setIngestResult] = useState(null)
 
   return (
     <div className="min-h-screen text-slate-100">
@@ -52,9 +51,7 @@ function App() {
       {/* Content */}
       <main className="mx-auto max-w-7xl px-6 py-6">
         <div key={activeTab} className="animate-fade-up">
-          {activeTab === 'ingest' && (
-            <IngestTab apiBase={API_BASE} onIngestResult={setIngestResult} />
-          )}
+          {activeTab === 'ingest' && <IngestTab apiBase={API_BASE} />}
           {activeTab === 'dashboard' && <DashboardTab apiBase={API_BASE} />}
           {activeTab === 'chat' && <ChatTab apiBase={API_BASE} />}
         </div>

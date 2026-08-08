@@ -5,11 +5,12 @@ export default function NumberTicker({ value, decimals = 0, className = '', dura
   const frame = useRef(null)
 
   useEffect(() => {
+    const target = Number.isFinite(value) ? value : 0
     const start = performance.now()
     const tick = (now) => {
       const progress = Math.min((now - start) / (duration * 1000), 1)
       const eased = 1 - Math.pow(1 - progress, 3)
-      setDisplay(value * eased)
+      setDisplay(target * eased)
       if (progress < 1) frame.current = requestAnimationFrame(tick)
     }
     frame.current = requestAnimationFrame(tick)
