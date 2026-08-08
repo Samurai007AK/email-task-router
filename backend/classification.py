@@ -113,7 +113,7 @@ Body:
 
 async def classify_email(email_data: dict) -> dict:
     """Classify an email using Gemini and return routing decision."""
-    if not settings.gemini_api_key:
+    if not settings.GEMINI_API_KEY:
         print("WARNING: GEMINI_API_KEY not set! Using fallback classification.", flush=True)
         return {
             "skip": False,
