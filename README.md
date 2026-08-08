@@ -4,9 +4,9 @@
 
 ## Deployed URLs
 
-- **Backend**: https://your-backend-url.onrender.com
-- **Frontend**: https://your-frontend-url.vercel.app
-- **GitHub**: https://github.com/yourusername/email-task-router
+- **Backend**: https://email-task-router.onrender.com
+- **Frontend**: https://email-task-router-one.vercel.app
+- **GitHub**: https://github.com/Samurai007AK/email-task-router
 
 ---
 
