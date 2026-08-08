@@ -4,6 +4,11 @@ from typing import List
 class Settings(BaseSettings):
     GEMINI_API_KEY: str = ""
     GEMINI_MODEL: str = ""  # optional pin; empty = auto-fallback chain
+    # Ollama Cloud (OpenAI-compatible). If OLLAMA_API_KEY is set, Ollama is
+    # tried FIRST for classification + chat phrasing; Gemini is the fallback.
+    OLLAMA_API_KEY: str = ""
+    OLLAMA_MODEL: str = ""  # empty = gemma4:31b
+    OLLAMA_BASE_URL: str = "https://ollama.com/v1"
     CANDIDATE_ID: str = "priya.sharma@gmail.com"
     DATABASE_URL: str = "sqlite+aiosqlite:///./data/tasks.db"
     CORS_ORIGINS: List[str] = [

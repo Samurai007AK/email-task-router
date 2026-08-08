@@ -3,10 +3,16 @@ import os
 import re
 import asyncio
 from typing import Optional, Dict, Any
+import httpx
 from google import genai
 from config import settings
 
 client = genai.Client(api_key=settings.GEMINI_API_KEY)
+
+# Ollama Cloud (OpenAI-compatible chat completions). Tried BEFORE Gemini when
+# OLLAMA_API_KEY is set. Model/URL are configurable via env.
+OLLAMA_BASE_URL = (settings.OLLAMA_BASE_URL or "https://ollama.com/v1").rstrip("/")
+OLLAMA_DEFAULT_MODEL = settings.OLLAMA_MODEL or "gemma4:31b"
 
 # Model fallback chain: newer models first. 404 = model retired for this account,
 # move to the next candidate. Set GEMINI_MODEL env var to pin a specific model
@@ -20,8 +26,64 @@ GEMINI_MODEL_CANDIDATES = [
 ]
 
 
+async def _call_ollama(prompt: str, max_output_tokens: int = 1024) -> str:
+    """Call Ollama Cloud via its OpenAI-compatible endpoint. Bounded retries on 429/5xx."""
+    headers = {
+        "Authorization": f"Bearer {settings.OLLAMA_API_KEY}",
+        "Content-Type": "application/json",
+    }
+    payload = {
+        "model": OLLAMA_DEFAULT_MODEL,
+        "messages": [{"role": "user", "content": prompt}],
+        "temperature": 0,
+        "max_tokens": max_output_tokens,
+    }
+    last_error = None
+    for attempt in range(3):
+        try:
+            async with httpx.AsyncClient(timeout=120) as http:
+                resp = await http.post(f"{OLLAMA_BASE_URL}/chat/completions", headers=headers, json=payload)
+            if resp.status_code == 429:
+                retry_after = resp.headers.get("Retry-After")
+                try:
+                    delay = min(float(retry_after), 30.0) if retry_after else 30.0
+                except (TypeError, ValueError):
+                    delay = 30.0
+                last_error = RuntimeError(f"HTTP 429 (rate-limited)")
+                print(f"Ollama rate-limited, retry in {delay:.0f}s", flush=True)
+                await asyncio.sleep(delay)
+                continue
+            if resp.status_code >= 500:
+                last_error = RuntimeError(f"HTTP {resp.status_code}")
+                print(f"Ollama server error {resp.status_code}, retrying", flush=True)
+                await asyncio.sleep(3)
+                continue
+            if resp.status_code != 200:
+                raise RuntimeError(f"Ollama HTTP {resp.status_code}: {resp.text[:200]}")
+            data = resp.json()
+            content = data["choices"][0]["message"]["content"]
+            return content.strip()
+        except httpx.HTTPError as e:
+            last_error = e
+            print(f"Ollama transport error: {e}, retrying", flush=True)
+            await asyncio.sleep(3)
+        except Exception as e:
+            last_error = e
+            print(f"Ollama error: {e}", flush=True)
+            raise
+    raise RuntimeError(f"Ollama failed after retries. Last error: {last_error}")
+
+
 async def generate_text(prompt: str, max_output_tokens: int = 1024) -> str:
-    """Call Gemini with model fallback + bounded 429 retries (respects RetryInfo delay)."""
+    """Generate text. Tries Ollama Cloud first (if configured), then Gemini with
+    model fallback + bounded 429 retries (respects RetryInfo delay)."""
+    if settings.OLLAMA_API_KEY:
+        try:
+            return await _call_ollama(prompt, max_output_tokens=max_output_tokens)
+        except Exception as e:
+            print(f"Ollama failed ({str(e)[:120]}), falling back to Gemini", flush=True)
+
+    # ---- Gemini fallback chain ----
     candidates = [m.strip() for m in (settings.GEMINI_MODEL or "").split(",") if m.strip()] + GEMINI_MODEL_CANDIDATES
     last_error = None
     for model in candidates:
@@ -157,9 +219,9 @@ Body:
 {cleaned_body}"""
 
 async def classify_email(email_data: dict) -> dict:
-    """Classify an email using Gemini and return routing decision."""
-    if not settings.GEMINI_API_KEY:
-        print("WARNING: GEMINI_API_KEY not set! Using fallback classification.", flush=True)
+    """Classify an email using the configured LLM provider and return routing decision."""
+    if not settings.GEMINI_API_KEY and not settings.OLLAMA_API_KEY:
+        print("WARNING: no LLM key configured! Using fallback classification.", flush=True)
         return {
             "skip": False,
             "assignee_id": "u_triage",
@@ -169,7 +231,7 @@ async def classify_email(email_data: dict) -> dict:
             "deal_value_inr": None,
             "company_name": None,
             "confidence": 0.3,
-            "error": "GEMINI_API_KEY not configured"
+            "error": "No LLM API key configured"
         }
 
     cleaned_body = email_data.get("cleaned_body", email_data.get("body", ""))
