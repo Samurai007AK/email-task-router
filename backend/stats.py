@@ -2,6 +2,7 @@ from typing import Dict, Any
 from sqlalchemy import select, func, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 from models import TaskModel, EmailModel, ThreadModel
+from classification import PROVIDER_COUNTERS
 
 async def get_stats(candidate_id: str, db: AsyncSession) -> Dict[str, Any]:
     total_tasks_result = await db.execute(
@@ -105,5 +106,7 @@ async def get_stats(candidate_id: str, db: AsyncSession) -> Dict[str, Any]:
             "average": round(avg_conf, 3),
             "low_confidence_count": low_conf
         },
-        "total_deal_value_inr": total_deal_value
+        "total_deal_value_inr": total_deal_value,
+        # Which LLM provider served classification/chat since the last restart
+        "llm_provider": dict(PROVIDER_COUNTERS)
     }

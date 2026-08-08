@@ -14,6 +14,10 @@ client = genai.Client(api_key=settings.GEMINI_API_KEY)
 OLLAMA_BASE_URL = (settings.OLLAMA_BASE_URL or "https://ollama.com/v1").rstrip("/")
 OLLAMA_DEFAULT_MODEL = settings.OLLAMA_MODEL or "gemma4:31b"
 
+# Which provider actually served each call — surfaced in /api/stats so the active
+# provider is verifiable in production without reading logs.
+PROVIDER_COUNTERS = {"ollama": 0, "gemini": 0, "error": 0}
+
 # Model fallback chain: newer models first. 404 = model retired for this account,
 # move to the next candidate. Set GEMINI_MODEL env var to pin a specific model
 # (comma-separated values are tried in order).
@@ -41,7 +45,7 @@ async def _call_ollama(prompt: str, max_output_tokens: int = 1024) -> str:
     last_error = None
     for attempt in range(3):
         try:
-            async with httpx.AsyncClient(timeout=120) as http:
+            async with httpx.AsyncClient(timeout=httpx.Timeout(60.0, connect=10.0)) as http:
                 resp = await http.post(f"{OLLAMA_BASE_URL}/chat/completions", headers=headers, json=payload)
             if resp.status_code == 429:
                 retry_after = resp.headers.get("Retry-After")
@@ -79,7 +83,10 @@ async def generate_text(prompt: str, max_output_tokens: int = 1024) -> str:
     model fallback + bounded 429 retries (respects RetryInfo delay)."""
     if settings.OLLAMA_API_KEY:
         try:
-            return await _call_ollama(prompt, max_output_tokens=max_output_tokens)
+            text = await _call_ollama(prompt, max_output_tokens=max_output_tokens)
+            PROVIDER_COUNTERS["ollama"] += 1
+            print(f"LLM provider: ollama ({OLLAMA_DEFAULT_MODEL})", flush=True)
+            return text
         except Exception as e:
             print(f"Ollama failed ({str(e)[:120]}), falling back to Gemini", flush=True)
 
@@ -97,6 +104,8 @@ async def generate_text(prompt: str, max_output_tokens: int = 1024) -> str:
                         max_output_tokens=max_output_tokens,
                     ),
                 )
+                PROVIDER_COUNTERS["gemini"] += 1
+                print(f"LLM provider: gemini ({model})", flush=True)
                 return response.text
             except Exception as e:
                 last_error = e
@@ -112,6 +121,7 @@ async def generate_text(prompt: str, max_output_tokens: int = 1024) -> str:
                     continue
                 print(f"Gemini error on '{model}': {err[:120]}", flush=True)
                 break  # non-retryable, try next model
+    PROVIDER_COUNTERS["error"] += 1
     raise RuntimeError(f"All Gemini models failed. Last error: {last_error}")
 
 CLASSIFICATION_PROMPT = """You are an expert email classifier for a B2B services company in India.
