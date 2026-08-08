@@ -113,6 +113,20 @@ Body:
 
 async def classify_email(email_data: dict) -> dict:
     """Classify an email using Gemini and return routing decision."""
+    if not settings.gemini_api_key:
+        print("WARNING: GEMINI_API_KEY not set! Using fallback classification.", flush=True)
+        return {
+            "skip": False,
+            "assignee_id": "u_triage",
+            "category": "triage",
+            "priority": "medium",
+            "due_date": None,
+            "deal_value_inr": None,
+            "company_name": None,
+            "confidence": 0.3,
+            "error": "GEMINI_API_KEY not configured"
+        }
+
     cleaned_body = email_data.get("cleaned_body", email_data.get("body", ""))
 
     prompt = CLASSIFICATION_PROMPT.format(
@@ -158,6 +172,7 @@ async def classify_email(email_data: dict) -> dict:
             "confidence": result.get("confidence", 0.5)
         }
     except Exception as e:
+        print(f"Classification error: {e}", flush=True)
         return {
             "skip": False,
             "assignee_id": "u_triage",
