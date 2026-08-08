@@ -76,6 +76,17 @@ app.add_middleware(
 )
 
 
+@app.exception_handler(Exception)
+async def debug_exception_handler(request: Request, exc: Exception):
+    # TEMPORARY debug handler — returns the traceback so the production 500 can be
+    # diagnosed. REMOVE before final submission.
+    import traceback
+    return JSONResponse(
+        status_code=500,
+        content={"error": "internal", "detail": traceback.format_exc()},
+    )
+
+
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     for error in exc.errors():
