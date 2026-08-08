@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import IngestTab from './components/IngestTab'
 import DashboardTab from './components/DashboardTab'
 import ChatTab from './components/ChatTab'
-import AuroraBackground from './components/ui/AuroraBackground'
+import LiquidGradient from './components/ui/LiquidGradient'
 import AnimatedTabs from './components/ui/AnimatedTabs'
 import GradientText from './components/ui/GradientText'
 import { IconInbox, IconChart, IconChat, IconSparkles } from './components/ui/Icons'
@@ -20,7 +20,7 @@ function App() {
 
   return (
     <div className="min-h-screen text-slate-100">
-      <AuroraBackground />
+      <LiquidGradient />
 
       {/* Header */}
       <header className="sticky top-0 z-20 border-b border-white/10 bg-[#06060f]/70 backdrop-blur-xl">
