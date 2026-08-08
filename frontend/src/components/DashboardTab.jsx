@@ -100,7 +100,7 @@ function DashboardTab({ apiBase }) {
     return (
       <div className="flex justify-center py-24">
         <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] px-6 py-4">
-          <div className="h-5 w-5 animate-spin rounded-full border-2 border-violet-400 border-t-transparent" />
+          <div className="h-5 w-5 animate-spin rounded-full border-2 border-red-400 border-t-transparent" />
           <span className="text-sm text-slate-300">Loading dashboard…</span>
         </div>
       </div>
@@ -112,7 +112,7 @@ function DashboardTab({ apiBase }) {
       {/* Stat cards */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard
-          icon={<IconChart className="h-5 w-5 text-violet-300" />}
+          icon={<IconChart className="h-5 w-5 text-red-300" />}
           label="Total Tasks"
           value={stats?.total}
         />
@@ -145,7 +145,7 @@ function DashboardTab({ apiBase }) {
               key={idx}
               className="flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-1.5 text-xs text-slate-300"
             >
-              <span className="text-violet-300">{chip.icon}</span>
+              <span className="text-red-300">{chip.icon}</span>
               {chip.label}: <span className="font-semibold text-white">{chip.value ?? 0}</span>
             </div>
           ))}
@@ -160,7 +160,7 @@ function DashboardTab({ apiBase }) {
             aria-label="Filter by assignee"
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
-            className="cursor-pointer rounded-lg border border-white/10 bg-[#0b0b1a] px-3 py-1 text-sm text-slate-200 outline-none transition-colors hover:border-white/25 focus:border-violet-400/60"
+            className="cursor-pointer rounded-lg border border-white/10 bg-[#0b0b1a] px-3 py-1 text-sm text-slate-200 outline-none transition-colors hover:border-white/25 focus:border-red-400/60"
           >
             <option value="all">All</option>
             <option value="u_aarti">Aarti (Enterprise)</option>
@@ -229,7 +229,7 @@ function DashboardTab({ apiBase }) {
                     <div className="flex items-center gap-2">
                       <div className="h-1.5 w-20 overflow-hidden rounded-full bg-white/10">
                         <div
-                          className="h-full rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-500"
+                          className="h-full rounded-full bg-gradient-to-r from-red-500 to-rose-500"
                           style={{ width: `${Math.min((task.confidence || 0) * 100, 100)}%` }}
                         />
                       </div>

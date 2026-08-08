@@ -75,7 +75,7 @@ function ChatTab({ apiBase }) {
       {/* Chat panel */}
       <SpotlightCard className="flex flex-col lg:col-span-2">
         <div className="flex items-center gap-3 border-b border-white/10 px-5 py-4">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 to-fuchsia-600">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-red-600 to-rose-600">
             <IconRobot className="h-5 w-5 text-white" />
           </div>
           <div>
@@ -88,14 +88,14 @@ function ChatTab({ apiBase }) {
         <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto p-5">
           {messages.length === 0 && (
             <div className="flex h-full flex-col items-center justify-center gap-2 py-16 text-center">
-              <IconSparkles className="h-8 w-8 text-violet-400/60" />
+              <IconSparkles className="h-8 w-8 text-red-400/60" />
               <p className="text-sm text-slate-500">Ask a question about your processed emails</p>
             </div>
           )}
           {messages.map((msg, idx) =>
             msg.role === 'user' ? (
               <div key={idx} className="flex justify-end">
-                <div className="max-w-[85%] rounded-2xl rounded-br-md bg-gradient-to-br from-violet-600 to-fuchsia-600 px-4 py-3 text-sm text-white shadow-[0_8px_30px_rgba(168,85,247,0.35)]">
+                <div className="max-w-[85%] rounded-2xl rounded-br-md bg-gradient-to-br from-red-600 to-rose-600 px-4 py-3 text-sm text-white shadow-[0_8px_30px_rgba(239,68,68,0.35)]">
                   {msg.content}
                 </div>
               </div>
@@ -107,7 +107,7 @@ function ChatTab({ apiBase }) {
                   </div>
                   {msg.supporting_data && Object.keys(msg.supporting_data).length > 0 && (
                     <details className="mt-1.5 group">
-                      <summary className="cursor-pointer select-none text-xs text-slate-500 transition-colors hover:text-violet-300">
+                      <summary className="cursor-pointer select-none text-xs text-slate-500 transition-colors hover:text-red-300">
                         <span className="inline-flex items-center gap-1">
                           <IconSparkles className="h-3 w-3" /> Supporting data
                         </span>
@@ -124,9 +124,9 @@ function ChatTab({ apiBase }) {
           {loading && (
             <div className="flex justify-start">
               <div className="flex items-center gap-1.5 rounded-2xl rounded-bl-md border border-white/10 bg-white/[0.05] px-4 py-3">
-                <span className="typing-dot h-2 w-2 rounded-full bg-violet-400" />
-                <span className="typing-dot h-2 w-2 rounded-full bg-fuchsia-400 [animation-delay:0.15s]" />
-                <span className="typing-dot h-2 w-2 rounded-full bg-cyan-400 [animation-delay:0.3s]" />
+                <span className="typing-dot h-2 w-2 rounded-full bg-red-400" />
+                <span className="typing-dot h-2 w-2 rounded-full bg-rose-400 [animation-delay:0.15s]" />
+                <span className="typing-dot h-2 w-2 rounded-full bg-orange-400 [animation-delay:0.3s]" />
               </div>
             </div>
           )}
@@ -140,7 +140,7 @@ function ChatTab({ apiBase }) {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-              className="flex-1 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 outline-none backdrop-blur-sm transition-colors focus:border-violet-400/60 focus:ring-2 focus:ring-violet-500/20"
+              className="flex-1 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 outline-none backdrop-blur-sm transition-colors focus:border-red-400/60 focus:ring-2 focus:ring-red-500/20"
               placeholder="Ask a question…"
             />
             <ShimmerButton onClick={handleSend} disabled={loading || !query.trim()} className="flex items-center gap-2">
@@ -154,7 +154,7 @@ function ChatTab({ apiBase }) {
       {/* Sample questions */}
       <SpotlightCard className="p-4 lg:h-full">
         <h3 className="mb-3 flex items-center gap-2 px-1 text-sm font-semibold text-white">
-          <IconSparkles className="h-4 w-4 text-violet-300" />
+          <IconSparkles className="h-4 w-4 text-red-300" />
           Sample Questions
         </h3>
         <div className="space-y-2 overflow-y-auto lg:max-h-[calc(100vh-320px)]">
@@ -162,7 +162,7 @@ function ChatTab({ apiBase }) {
             <button
               key={idx}
               onClick={() => handleSampleQuestion(q)}
-              className="w-full rounded-xl border border-white/[0.06] bg-white/[0.03] px-3 py-2.5 text-left text-sm text-slate-400 transition-all duration-200 hover:border-violet-400/30 hover:bg-violet-500/10 hover:text-slate-200"
+              className="w-full rounded-xl border border-white/[0.06] bg-white/[0.03] px-3 py-2.5 text-left text-sm text-slate-400 transition-all duration-200 hover:border-red-400/30 hover:bg-red-500/10 hover:text-slate-200"
             >
               {q}
             </button>

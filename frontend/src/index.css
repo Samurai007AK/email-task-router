@@ -46,7 +46,7 @@ body {
 
 /* ---------- Text gradient ---------- */
 .text-gradient {
-  background: linear-gradient(92deg, #a78bfa 0%, #e879f9 45%, #22d3ee 100%);
+  background: linear-gradient(92deg, #ef4444 0%, #f43f5e 45%, #fb923c 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -73,9 +73,9 @@ body {
   background: conic-gradient(
     from var(--beam-angle),
     transparent 0deg,
-    rgba(139, 92, 246, 0.9) 60deg,
-    rgba(236, 72, 153, 0.9) 150deg,
-    rgba(34, 211, 238, 0.7) 240deg,
+    rgba(239, 68, 68, 0.9) 60deg,
+    rgba(244, 63, 94, 0.9) 150deg,
+    rgba(251, 146, 60, 0.7) 240deg,
     transparent 320deg
   );
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
@@ -183,9 +183,9 @@ body {
 @keyframes glow-pulse {
   0%,
   100% {
-    box-shadow: 0 0 18px rgba(168, 85, 247, 0.25);
+    box-shadow: 0 0 18px rgba(239, 68, 68, 0.25);
   }
   50% {
-    box-shadow: 0 0 34px rgba(168, 85, 247, 0.55);
+    box-shadow: 0 0 34px rgba(239, 68, 68, 0.55);
   }
 }

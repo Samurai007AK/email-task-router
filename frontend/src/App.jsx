@@ -26,7 +26,7 @@ function App() {
       <header className="sticky top-0 z-20 border-b border-white/10 bg-[#06060f]/70 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-3">
-            <div className="animate-glow flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 to-fuchsia-600">
+            <div className="animate-glow flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-red-600 to-rose-600">
               <IconSparkles className="h-5 w-5 text-white" />
             </div>
             <div>
@@ -37,7 +37,7 @@ function App() {
             </div>
           </div>
           <div className="hidden items-center gap-2 rounded-full border border-white/10 bg-white/[0.05] px-4 py-1.5 text-xs text-slate-300 sm:flex">
-            <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
+            <span className="h-2 w-2 animate-pulse rounded-full bg-red-400" />
             candidate: priya.sharma@gmail.com
           </div>
         </div>

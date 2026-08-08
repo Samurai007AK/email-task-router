@@ -451,7 +451,7 @@ function IngestTab({ apiBase, onIngestResult }) {
     {
       label: 'Processed',
       value: ingestResult?.processed,
-      icon: <IconInbox className="h-5 w-5 text-violet-300" />,
+      icon: <IconInbox className="h-5 w-5 text-red-300" />,
     },
     {
       label: 'Tasks Created',
@@ -482,7 +482,7 @@ function IngestTab({ apiBase, onIngestResult }) {
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 px-6 py-4">
           <div>
             <h2 className="flex items-center gap-2 text-lg font-semibold text-white">
-              <IconInbox className="h-5 w-5 text-violet-300" />
+              <IconInbox className="h-5 w-5 text-red-300" />
               Paste Email JSON
             </h2>
             <p className="text-xs text-slate-400">Generate a realistic batch or paste your own</p>
@@ -505,7 +505,7 @@ function IngestTab({ apiBase, onIngestResult }) {
           <textarea
             value={jsonInput}
             onChange={(e) => setJsonInput(e.target.value)}
-            className="h-64 w-full resize-y rounded-xl border border-white/10 bg-black/30 p-4 font-mono text-xs leading-relaxed text-slate-300 placeholder-slate-600 outline-none backdrop-blur-sm transition-colors focus:border-violet-400/60 focus:ring-2 focus:ring-violet-500/20"
+            className="h-64 w-full resize-y rounded-xl border border-white/10 bg-black/30 p-4 font-mono text-xs leading-relaxed text-slate-300 placeholder-slate-600 outline-none backdrop-blur-sm transition-colors focus:border-red-400/60 focus:ring-2 focus:ring-red-500/20"
             placeholder='[{"email_id": "em_001", "thread_id": "th_001", ...}]'
           />
           <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
@@ -573,7 +573,7 @@ function IngestTab({ apiBase, onIngestResult }) {
         <SpotlightCard>
           <div className="flex items-center justify-between border-b border-white/10 px-6 py-4">
             <h2 className="flex items-center gap-2 text-lg font-semibold text-white">
-              <IconFile className="h-5 w-5 text-cyan-300" />
+              <IconFile className="h-5 w-5 text-orange-300" />
               Raw Email Data
               <span className="text-sm font-normal text-slate-500">({parsedEmails.length} emails)</span>
             </h2>
@@ -632,7 +632,7 @@ function IngestTab({ apiBase, onIngestResult }) {
             key={tag}
             className="flex items-center gap-2 whitespace-nowrap rounded-full border border-white/10 bg-white/[0.04] px-4 py-1.5 text-xs text-slate-400"
           >
-            <IconSparkles className="h-3 w-3 text-violet-400" />
+            <IconSparkles className="h-3 w-3 text-red-400" />
             {tag}
           </span>
         ))}

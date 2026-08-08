@@ -16,7 +16,7 @@ export default function AnimatedTabs({ tabs, active, onChange, className = '' })
             }`}
           >
             {isActive && (
-              <span className="absolute inset-0 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 shadow-[0_0_22px_rgba(168,85,247,0.45)]" />
+              <span className="absolute inset-0 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 shadow-[0_0_22px_rgba(239,68,68,0.45)]" />
             )}
             <span className="relative flex items-center gap-2">
               {tab.icon}
