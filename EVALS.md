@@ -2,7 +2,7 @@
 
 ## Methodology
 
-- **Dataset**: 50 emails hand-labelled from inbox.json (250-email dataset)
+- **Dataset**: 60 emails hand-labelled from inbox.json (250-email dataset) — the per-category Support column below sums to 60
 - **Ground Truth**: Labelling based on routing rules in §4 and worked examples in §6
 - **Evaluation**: Compared system output against ground truth across 7 categories
 - **Date**: 2026-08-08
@@ -31,7 +31,7 @@ Each email was labelled with:
 
 ### Overall Metrics
 - **Accuracy**: 89.2% (correct classifications / total emails)
-- **Spurious Rate**: 4.0% (tasks created from spam/OOO/newsletter / total processed)
+- **Spurious Rate**: 5.0% (3 spurious tasks created from vendor spam / 60 emails processed — see False Positives below)
 - **Macro F1**: 0.87
 
 ---
@@ -113,6 +113,8 @@ Each email was labelled with:
 | 0.50 - 0.69 | 8 | 4 | 66.7% |
 | 0.30 - 0.49 | 3 | 4 | 42.9% |
 | 0.00 - 0.29 | 0 | 2 | 0.0% |
+
+*Note: the calibration table covers 58 of the 60 emails — 2 out-of-office auto-replies were caught by the deterministic pre-filter (Rule 4) before the LLM ran, so they carry no confidence score.*
 
 **Observation**: Confidence scores correlate well with correctness. Emails with confidence > 0.90 are almost always correct. Emails below 0.50 are essentially random — these should be routed to triage.
 
