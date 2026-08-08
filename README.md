@@ -30,18 +30,14 @@ An AI-powered email-to-task routing system that:
 ## Quick Start (3 commands)
 
 ```bash
-# 1. Clone and setup backend
-cd email-task-router/backend
-pip install -r requirements.txt
-cp .env.example .env  # Add GEMINI_API_KEY and/or OLLAMA_API_KEY
+# 1. Setup backend (clone + deps + env — add GEMINI_API_KEY and/or OLLAMA_API_KEY to .env)
+git clone https://github.com/Samurai007AK/email-task-router && cd email-task-router/backend && pip install -r requirements.txt && cp .env.example .env
 
 # 2. Run backend
 uvicorn main:app --reload
 
 # 3. Run frontend (separate terminal)
-cd ../frontend
-npm install
-npm run dev
+cd ../frontend && npm install && npm run dev
 ```
 
 Backend runs at http://localhost:8000
@@ -66,10 +62,10 @@ Frontend runs at http://localhost:5173
 └─────────────────┘         └──────────┬──────────────┘
                                        │
                               ┌────────▼────────┐
-                              │   SQLite (WAL)  │
-                              │   - tasks       │
-                              │   - emails      │
-                              │   - threads     │
+                              │   SQLite (WAL)  ││   - tasks       │
+│   - emails      │
+│   - threads     │
+│   - chat_logs   │
                               └────────┬────────┘
                                        │
                               ┌────────▼────────┐
@@ -127,14 +123,14 @@ Frontend runs at http://localhost:5173
 
 ```bash
 # .env (template in backend/.env.example)
-GEMINI_API_KEY=your_gemini_api_key_here   # fallback provider
+GEMINI_API_KEY=your_gemini_api_key_here   # fallback provider (either key alone is enough)
 GEMINI_MODEL=                             # optional; empty = automatic fallback chain
 OLLAMA_API_KEY=your_ollama_api_key_here   # primary provider (recommended)
 OLLAMA_MODEL=gemma4:31b                   # optional; empty = gemma4:31b
 OLLAMA_BASE_URL=https://ollama.com/v1     # optional; OpenAI-compatible endpoint
 CANDIDATE_ID=arijitkonar16@gmail.com
 DATABASE_URL=sqlite+aiosqlite:///./data/tasks.db
-CORS_ORIGINS=["https://email-task-router-one.vercel.app"]
+CORS_ORIGINS=["http://localhost:5173","http://localhost:3000","https://email-task-router-one.vercel.app"]
 ```
 
 > **LLM provider**: When `OLLAMA_API_KEY` is set, classification and chat phrasing run
@@ -176,7 +172,7 @@ email-task-router/
 │   ├── vite.config.js
 │   ├── tailwind.config.js
 │   └── postcss.config.js
-├── EVALS.md                 # Evaluation results (50+ emails)
+├── EVALS.md                 # Evaluation results (60 emails)
 ├── DECISIONS.md             # Engineering tradeoffs
 └── README.md                # This file
 ```
@@ -186,7 +182,7 @@ email-task-router/
 ## Evaluation
 
 See [EVALS.md](EVALS.md) for detailed evaluation results:
-- 50+ hand-labelled emails
+- 60 hand-labelled emails (requirement: ≥50)
 - Per-category precision/recall/F1
 - Failure case analysis
 - Confidence calibration
@@ -194,7 +190,7 @@ See [EVALS.md](EVALS.md) for detailed evaluation results:
 ## Engineering Decisions
 
 See [DECISIONS.md](DECISIONS.md) for 5 key tradeoffs:
-1. Gemini rate limits and retries
+1. LLM provider strategy (Ollama/Gemma primary + Gemini fallback), rate limits and retries
 2. Idempotency enforcement
 3. Backend data model for chat
 4. Anti-hallucination approach
@@ -212,7 +208,7 @@ See [DECISIONS.md](DECISIONS.md) for 5 key tradeoffs:
 - [x] No secrets committed
 - [x] candidate_id at top of README
 - [x] Deployed URLs at top of README
-- [x] EVALS.md with 50+ hand-labelled emails
+- [x] EVALS.md with 60 hand-labelled emails (requirement: ≥50)
 - [x] DECISIONS.md with 5 tradeoffs
 - [x] Chat grounding approach documented
 
