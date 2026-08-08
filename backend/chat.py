@@ -23,6 +23,47 @@ Data from database:
 
 Provide a concise, factual answer grounded in the data above. Include specific numbers, names, and categories where available."""
 
+KNOWN_INTENTS = {
+    "count_by_category", "count_by_assignee", "filter_triage", "spurious_rate",
+    "low_confidence", "high_priority", "total_deal_value", "thread_updates",
+    "marketing_vs_spam", "zero_count", "out_of_scope", "general",
+}
+
+
+def _keyword_intent(query: str) -> Dict[str, Any]:
+    """Deterministic keyword fallback so chat answers never depend on Gemini's intent pick."""
+    q = query.lower()
+    empty = {"intent": "general", "filters": {}, "category": None, "assignee": None}
+    if any(w in q for w in ["send ", "send an email", "email aarti", "create a task", "create task", "forward ", "reply to that"]):
+        return {**empty, "intent": "out_of_scope"}
+    if "spam" in q and "market" in q:
+        return {**empty, "intent": "marketing_vs_spam"}
+    if "spurious" in q:
+        return {**empty, "intent": "spurious_rate"}
+    if "triage" in q:
+        return {**empty, "intent": "filter_triage"}
+    if "low confidence" in q:
+        filters = {"priority": "high"} if ("high priority" in q or "high-priority" in q) else {}
+        return {**empty, "intent": "low_confidence", "filters": filters}
+    if "high priority" in q:
+        return {**empty, "intent": "high_priority"}
+    if "deal value" in q or "total value" in q:
+        return {**empty, "intent": "total_deal_value"}
+    if "thread" in q:
+        return {**empty, "intent": "thread_updates"}
+    if "rfp" in q or "proposal" in q or "tender" in q:
+        return {**empty, "intent": "count_by_category", "category": "enterprise_rfp"}
+    if "alliance" in q or "partner" in q or "reseller" in q:
+        return {**empty, "intent": "count_by_category", "category": "alliances"}
+    if "invoice" in q or "payment" in q or "po " in q or "purchase order" in q:
+        return {**empty, "intent": "count_by_category", "category": "finance"}
+    if "marketing" in q or "webinar" in q or "sponsor" in q:
+        return {**empty, "intent": "count_by_category", "category": "marketing"}
+    if "assignee" in q or "assigned to" in q:
+        return {**empty, "intent": "count_by_assignee"}
+    return empty
+
+
 async def classify_query_intent(query: str) -> Dict[str, Any]:
     """Classify the user's query intent to determine what data to fetch."""
     prompt = f"""Classify this query into a structured intent. Respond with ONLY valid JSON.
@@ -50,12 +91,13 @@ Return JSON: {{"intent": "...", "filters": {{...}}, "category": "...", "assignee
         if text.startswith("```"):
             text = text.split("\n", 1)[1].rsplit("```", 1)[0].strip()
         parsed = json.loads(text)
-        # Gemini occasionally returns non-dict JSON — never let it crash the query layer
-        if isinstance(parsed, dict):
+        # Gemini occasionally returns non-dict JSON or an unknown intent —
+        # fall back to deterministic keyword matching so answers stay grounded
+        if isinstance(parsed, dict) and parsed.get("intent") in KNOWN_INTENTS:
             return parsed
-        return {"intent": "general", "filters": {}, "category": None, "assignee": None}
+        return _keyword_intent(query)
     except Exception:
-        return {"intent": "general", "filters": {}, "category": None, "assignee": None}
+        return _keyword_intent(query)
 
 
 async def fetch_data_for_intent(intent: Dict[str, Any], candidate_id: str, db: AsyncSession) -> Dict[str, Any]:
