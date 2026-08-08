@@ -1,0 +1,171 @@
+import json
+import os
+import re
+from typing import Optional, Dict, Any
+from google import genai
+from config import settings
+
+client = genai.Client(api_key=settings.GEMINI_API_KEY)
+
+CLASSIFICATION_PROMPT = """You are an expert email classifier for a B2B services company in India.
+
+## Routing Rules (apply in order)
+1. RFPs, RFIs, tenders, inbound deals > ₹10,00,000 → assignee: u_aarti, category: enterprise_rfp
+2. Product enquiries, demo requests, deals ≤ ₹10,00,000 → assignee: u_rohit, category: smb_enquiry
+3. Webinars, event/conference sponsorships, content collaborations, PR → assignee: u_meera, category: marketing
+4. Reseller, channel partner, technology integration proposals → assignee: u_karan, category: alliances
+5. Invoices, POs, payment reminders, GST, vendor billing → assignee: u_divya, category: finance
+6. Anything ambiguous → assignee: u_triage, category: triage
+
+## Override Rules
+- PSU/Government tenders ALWAYS → u_aarti (regardless of value)
+- Out-of-office auto-replies, newsletters, unsolicited vendor spam → DO NOT CREATE TASK. Return skip=true.
+- Reply on existing thread → should UPDATE existing task, not create new
+- Deadline within 72 hours of received_at → priority: high
+
+## Currency Parsing
+- "Rs 25 lakhs" or "25 lakhs" = 2500000
+- "1.2 cr" or "Rs 1.2 crore" = 12000000
+- "Rs 1,18,000" = 118000
+- Invoice amount ≠ deal value → deal_value_inr: null
+
+## Important: Direction of Intent
+- Emails SELLING TO US (vendor spam, cold outreach) → skip
+- Emails FROM CLIENTS/PARTNERS (proposals, enquiries) → route
+- Check: is the sender offering services, or requesting ours?
+
+## Examples
+
+Example 1 - Enterprise RFP:
+From: s.kulkarni@meridiansteel.co.in
+Subject: RFP - Enterprise Document Management System
+Body: Meridian Steel invites proposals for an enterprise DMS. Indicative budget Rs 25 lakhs. Submission due 12th August 2026.
+Result: {"assignee_id": "u_aarti", "category": "enterprise_rfp", "priority": "medium", "due_date": "2026-08-12", "deal_value_inr": 2500000, "company_name": "Meridian Steel", "confidence": 0.92}
+
+Example 2 - SMB Demo:
+From: ankit@railyardlogistics.in
+Subject: Quick demo request
+Body: Hi, we are a 30-person logistics startup. Can we get a demo next week? Nothing urgent.
+Result: {"assignee_id": "u_rohit", "category": "smb_enquiry", "priority": "low", "due_date": null, "deal_value_inr": null, "company_name": "Railyard Logistics", "confidence": 0.90}
+
+Example 3 - PSU Tender:
+From: procurement@bhel.co.in
+Subject: Tender Notice No. BHEL/PROC/2026/0847
+Body: Bharat Heavy Electricals Limited invites bids for analytics software. Value Rs 6,50,000. Last date 03-08-2026.
+Result: {"assignee_id": "u_aarti", "category": "enterprise_rfp", "priority": "high", "due_date": "2026-08-03", "deal_value_inr": 650000, "company_name": "Bharat Heavy Electricals Limited", "confidence": 0.95}
+
+Example 4 - Marketing Sponsorship:
+From: nandita@saassummit.in
+Subject: Sponsorship confirmation needed
+Body: India SaaS Summit Gold tier ₹4,00,000. Need confirmation by tomorrow EOD.
+Result: {"assignee_id": "u_meera", "category": "marketing", "priority": "high", "due_date": "2026-08-03", "deal_value_inr": 400000, "company_name": "India SaaS Summit", "confidence": 0.93}
+
+Example 5 - Out of Office (SKIP):
+From: someone@company.com
+Subject: Out of Office
+Body: I am out of office until 14th August. For urgent matters contact colleague.
+Result: {"skip": true, "reason": "out_of_office", "confidence": 0.98}
+
+Example 6 - Newsletter (SKIP):
+From: newsletter@techcrunch.com
+Subject: The B2B Growth Weekly
+Body: In this edition: why PLG is stalling, 5 pricing experiments. Unsubscribe.
+Result: {"skip": true, "reason": "newsletter", "confidence": 0.97}
+
+Example 7 - Vendor Spam (SKIP):
+From: seo@webgrowth.io
+Subject: Your website ranking
+Body: We noticed your website is not ranking on page 1. We have helped 200+ companies. Free audit attached.
+Result: {"skip": true, "reason": "vendor_spam", "confidence": 0.94}
+
+Example 8 - Finance:
+From: accounts@vantagecloud.in
+Subject: Invoice INV-2026-0331
+Body: Please find attached invoice for Rs 1,18,000 incl 18% GST against PO-88214. Now 12 days overdue.
+Result: {"assignee_id": "u_divya", "category": "finance", "priority": "high", "due_date": null, "deal_value_inr": null, "company_name": "Vantage Cloud Services", "confidence": 0.95}
+
+Example 9 - Alliances:
+From: partner@zenithcloud.com
+Subject: Partnership opportunity
+Body: We are a Salesforce implementation partner with 40+ enterprise clients. We would like to explore reselling your platform.
+Result: {"assignee_id": "u_karan", "category": "alliances", "priority": "medium", "due_date": null, "deal_value_inr": null, "company_name": "Zenith Cloud Partners", "confidence": 0.88}
+
+Example 10 - Ambiguous (TRIAGE):
+From: farhan@halcyonretail.com
+Subject: Meeting follow-up
+Body: Two things: (1) evaluate platform for 800-person org, budget TBD, (2) CMO wants to co-host a webinar.
+Result: {"assignee_id": "u_triage", "category": "triage", "priority": "medium", "due_date": null, "deal_value_inr": null, "company_name": "Halcyon Retail", "confidence": 0.42}
+
+Example 11 - Hinglish:
+From: dealer@mahindra.in
+Subject: Product inquiry
+Body: Bhai, humko aapka product chahiye for dealer network. 150 users. Budget 1.2 cr. Board review 20th ko hai.
+Result: {"assignee_id": "u_aarti", "category": "enterprise_rfp", "priority": "medium", "due_date": "2026-08-20", "deal_value_inr": 12000000, "company_name": null, "confidence": 0.87}
+
+Now classify this email. Respond with ONLY valid JSON matching the schema above.
+
+From: {from_name} <{from_email}>
+To: {to}
+Subject: {subject}
+Date: {received_at}
+Body:
+{cleaned_body}"""
+
+async def classify_email(email_data: dict) -> dict:
+    """Classify an email using Gemini and return routing decision."""
+    cleaned_body = email_data.get("cleaned_body", email_data.get("body", ""))
+
+    prompt = CLASSIFICATION_PROMPT.format(
+        from_name=email_data.get("from_name", ""),
+        from_email=email_data.get("from_email", ""),
+        to=email_data.get("to", ""),
+        subject=email_data.get("subject", ""),
+        received_at=email_data.get("received_at", ""),
+        cleaned_body=cleaned_body[:3000]
+    )
+
+    try:
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=prompt,
+            config=genai.types.GenerateContentConfig(
+                temperature=0,
+                max_output_tokens=1024,
+            ),
+        )
+
+        text = response.text.strip()
+        if text.startswith("```"):
+            text = text.split("\n", 1)[1].rsplit("```", 1)[0].strip()
+
+        result = json.loads(text)
+
+        if result.get("skip"):
+            return {
+                "skip": True,
+                "reason": result.get("reason", "unknown"),
+                "confidence": result.get("confidence", 0.5)
+            }
+
+        return {
+            "skip": False,
+            "assignee_id": result.get("assignee_id", "u_triage"),
+            "category": result.get("category", "triage"),
+            "priority": result.get("priority", "medium"),
+            "due_date": result.get("due_date"),
+            "deal_value_inr": result.get("deal_value_inr"),
+            "company_name": result.get("company_name"),
+            "confidence": result.get("confidence", 0.5)
+        }
+    except Exception as e:
+        return {
+            "skip": False,
+            "assignee_id": "u_triage",
+            "category": "triage",
+            "priority": "medium",
+            "due_date": None,
+            "deal_value_inr": None,
+            "company_name": None,
+            "confidence": 0.3,
+            "error": str(e)
+        }
