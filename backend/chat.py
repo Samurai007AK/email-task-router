@@ -34,7 +34,7 @@ Possible intents:
 - count_by_assignee: count tasks by assignee
 - filter_triage: show triage tasks
 - spurious_rate: calculate spurious/skipped rate
-- low_confidence: find low confidence tasks (if the question ALSO mentions high priority, set filters: {"priority": "high"})
+- low_confidence: find low confidence tasks (if the question ALSO mentions high priority, set filters: {{"priority": "high"}})
 - high_priority: find high priority tasks
 - total_deal_value: sum deal values
 - thread_updates: find threads updated multiple times
