@@ -1,20 +1,26 @@
 # DECISIONS.md — Engineering Tradeoffs
 
-## 1. Gemini Rate Limits and Retries
+## 1. LLM Provider Strategy, Rate Limits and Retries
 
 ### Decision
-Implemented exponential backoff with jitter for Gemini API rate limits (429 errors), honouring Google's `RetryInfo.retryDelay` with a bounded 30s cap and 3 attempts per model. Added a 1-second delay between emails in a batch. Because `gemini-2.5-flash` is retired for new accounts (404), the client uses a model fallback chain — newer models first, moving to the next on 404 — with an optional `GEMINI_MODEL` env pin. On total failure the email falls back to u_triage rather than being dropped (a dropped email is worse than a slow one).
+The primary provider for classification and chat phrasing is **Ollama Cloud (Gemma 4 31B, `gemma4:31b`)** whenever `OLLAMA_API_KEY` is set — it scored 8/8 on the spec's worked examples in local testing and does not suffer the free-tier quota churn that made Gemini unusable for batch work. **Gemini is the automatic fallback** if Ollama fails. Both paths share the same bounded-retry design:
+- **Ollama**: 3 attempts per call; HTTP 429 honours `Retry-After` capped at 30s; 5xx/transport errors retry after 3s.
+- **Gemini**: model fallback chain (`gemini-3-flash` → `gemini-3-flash-preview` → `gemini-2.5-flash-lite` → `gemini-2.0-flash` → `gemini-2.5-flash`) because newer models are retired for new accounts (404); 3 attempts per model; 429 delays honour `RetryInfo.retryDelay` capped at 30s. An optional `GEMINI_MODEL` env pin overrides the chain.
+- Emails in a batch are processed **sequentially with a 1-second inter-email delay** (no concurrent fan-out).
+- On total failure the email falls back to u_triage rather than being dropped (a dropped email is worse than a slow one).
+- Which provider actually served each call is instrumented (`llm_provider` counters surfaced in `/api/stats`), so the active provider is verifiable in production without reading logs.
 
 ### Tradeoff
-- **Chose**: Async semaphore + exponential backoff (base=2s, max=3 retries, jitter=0-1s)
+- **Chose**: Ollama Cloud primary + Gemini fallback, bounded retries (3 attempts, server-honoured delays capped at 30s), sequential processing with 1s spacing
 - **Rejected**: Token bucket rate limiter (more complex, unnecessary for hackathon scale)
 - **Rejected**: Request queuing with Redis (adds infrastructure complexity)
+- **Rejected**: Concurrent Gemini fan-out (free-tier 429s made concurrency counterproductive; sequential + Ollama is both simpler and faster)
 
 ### Rationale
-The hackathon processes batches of ≤100 emails. At 10 RPM with 5 concurrent calls, a 100-email batch takes ~20 seconds. Exponential backoff handles transient 429s without losing emails. The 1-second inter-email delay keeps us well under the rate limit.
+Batches are capped at 100 emails and /ingest has a 15-minute timeout. On Ollama, calls return in seconds, so a full 100-email batch takes roughly 2-4 minutes (dominated by the 1s inter-email delay) — comfortably inside the timeout. Gemini is deliberately the safety net, not the main path: at ~10 RPM, a full batch served by Gemini alone would take ≥10 minutes sequential, so relying on it would be a latency risk.
 
 ### With 2 More Weeks
-Implement a proper token bucket rate limiter with persistent state (survives restarts) and a request queue (Redis or SQLite-based) for true production-grade rate management. Add circuit breaker pattern for sustained rate limit violations.
+Implement a proper token bucket rate limiter with persistent state (survives restarts) and a request queue (Redis or SQLite-based) for true production-grade rate management. Add a circuit breaker pattern for sustained rate-limit violations, and introduce a bounded concurrent worker pool now that Ollama removes the 429 constraint.
 
 ---
 
@@ -24,7 +30,7 @@ Implement a proper token bucket rate limiter with persistent state (survives res
 Implemented deduplication on `source_email_id` at the Task API level. Before creating a task, check if one exists for that email. Thread reconciliation: check `thread_id`, if exists → PATCH existing task, not POST new. Atomic operations using SQLite transactions.
 
 ### Tradeoff
-- **Chose**: Application-level dedup with DB constraint + transaction
+- **Chose**: Application-level dedup (on `source_email_id` before create, on `thread_id` for updates) + unique DB constraints on `email_id` and `task_id` + SQLite transaction
 - **Rejected**: Distributed locking with Redis (overkill for single-instance hackathon)
 - **Rejected**: Idempotency keys in request headers (adds client complexity)
 
@@ -46,7 +52,7 @@ Add idempotency keys to Task API responses and implement TTL-based dedup cleanup
 ## 3. Backend Data Model for Chat
 
 ### Decision
-Separate tables: `emails` (raw + classification metadata), `tasks` (Task API spec), `threads` (thread_id → task_id mapping). Chat queries the `emails` table for classification metadata (why something was skipped) and `tasks` table for created tasks. Supporting_data is computed from DB aggregates, not re-inferred.
+Separate tables: `emails` (raw + classification metadata + skip reason), `tasks` (Task API spec), `threads` (thread_id → task_id mapping with `update_count` for reply tracking), and `chat_logs` (query/answer history). Chat queries `emails` for classification metadata (why something was skipped) and `tasks` for created tasks. `supporting_data` is computed from DB aggregates, never re-inferred.
 
 ### Tradeoff
 - **Chose**: Normalized relational schema with separate tables
@@ -54,7 +60,7 @@ Separate tables: `emails` (raw + classification metadata), `tasks` (Task API spe
 - **Rejected**: Vector store for semantic search (adds complexity, not needed for structured queries)
 
 ### Rationale
-The chat interface needs to answer questions like "how many were marketing vs spam?" which requires querying the `emails` table for skip reasons, and "show me triage tasks" which requires the `tasks` table. Separate tables allow independent querying without JOIN overhead. SQLite with FTS5 provides adequate search for the hackathon scale.
+The chat interface needs to answer questions like "how many were marketing vs spam?" which requires querying the `emails` table for skip reasons, and "show me triage tasks" which requires the `tasks` table. Separate tables allow independent querying without JOIN overhead. SQLite relational queries over indexed columns (`candidate_id`, `thread_id`, `category`) are more than adequate for the structured counts and filters chat needs — FTS5 would add nothing here.
 
 ### With 2 More Weeks
 Add FTS5 indexes for full-text search across email bodies and task descriptions. Implement vector embeddings (using Gemini embeddings) for semantic query support. Add a materialized view for common aggregate queries.
@@ -64,7 +70,7 @@ Add FTS5 indexes for full-text search across email bodies and task descriptions.
 ## 4. Anti-Hallucination Chat Approach
 
 ### Decision
-Pattern: Parse question intent (Gemini) → Execute SQL query (DB) → Get raw data → LLM formats answer with data as context. LLM never generates facts, only phrases them. `supporting_data` always returned alongside answer.
+Pattern: Parse question intent (LLM — same Ollama-first/`generate_text` path, with a deterministic keyword fallback `_keyword_intent` if the LLM returns an unknown or unparseable intent) → Execute SQL query (DB) → Get raw data → LLM formats the answer with the data as context. The LLM never generates facts, only phrases them. An explicit `zero_count` intent exists so "GST refunds?"-style questions return a literal zero rather than a plausible guess. `supporting_data` is always returned alongside the answer so every number is traceable to a query result.
 
 ### Tradeoff
 - **Chose**: Structured query → LLM formatting (deterministic facts, natural language answer)
@@ -102,7 +108,7 @@ Implement a sender-domain reputation system: build a lookup table of known vendo
 
 | # | Decision | Key Tradeoff | Hackathon Impact |
 |---|----------|--------------|------------------|
-| 1 | Rate limit handling | Simplicity vs. production-grade | Prevents 429 errors during batch processing |
+| 1 | LLM provider + rate limits | Ollama primary vs. Gemini fallback | Avoids free-tier 429 stalls during batch processing |
 | 2 | Idempotency | App-level vs. distributed | Passes Run 2 (idempotency test) |
 | 3 | Data model | Normalized vs. denormalized | Enables grounded chat queries |
 | 4 | Anti-hallucination | Structured query vs. pure LLM | Prevents fabricated answers |
