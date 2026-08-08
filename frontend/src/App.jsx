@@ -36,10 +36,6 @@ function App() {
               <p className="text-xs text-slate-400">ALUMNX AI LABS — FDE Intern Hiring Challenge</p>
             </div>
           </div>
-          <div className="hidden items-center gap-2 rounded-full border border-white/10 bg-white/[0.05] px-4 py-1.5 text-xs text-slate-300 sm:flex">
-            <span className="h-2 w-2 animate-pulse rounded-full bg-red-400" />
-            candidate: priya.sharma@gmail.com
-          </div>
         </div>
       </header>
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef } from 'react'
 import * as THREE from 'three'
 
 /**
@@ -214,10 +214,6 @@ class App {
     this.init()
   }
 
-  setPaused(paused) {
-    this.gradientBackground.isPaused = paused
-  }
-
   getViewSize() {
     const fov = (this.camera.fov * Math.PI) / 180
     const height = Math.abs(this.camera.position.z * Math.tan(fov / 2) * 2)
@@ -276,10 +272,9 @@ class App {
   }
 }
 
-export default function LiquidGradient({ showPauseButton = true }) {
+export default function LiquidGradient() {
   const containerRef = useRef(null)
   const appRef = useRef(null)
-  const [isPlaying, setIsPlaying] = useState(true)
 
   useEffect(() => {
     const container = containerRef.current
@@ -291,10 +286,6 @@ export default function LiquidGradient({ showPauseButton = true }) {
     }
   }, [])
 
-  useEffect(() => {
-    if (appRef.current) appRef.current.setPaused(!isPlaying)
-  }, [isPlaying])
-
   return (
     <>
       {/* WebGL liquid gradient layer */}
@@ -303,26 +294,6 @@ export default function LiquidGradient({ showPauseButton = true }) {
         {/* Legibility overlay so table/card text stays readable over the motion */}
         <div className="absolute inset-0 bg-[#06060f]/50" />
       </div>
-
-      {/* Pause / play the animation */}
-      {showPauseButton && (
-        <button
-          onClick={() => setIsPlaying((v) => !v)}
-          aria-label={isPlaying ? 'Pause background animation' : 'Play background animation'}
-          className="fixed right-4 bottom-4 z-30 flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-black/40 text-slate-300 backdrop-blur transition hover:border-red-500/50 hover:text-white"
-        >
-          {isPlaying ? (
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-              <rect x="6" y="4" width="4" height="16" rx="1" />
-              <rect x="14" y="4" width="4" height="16" rx="1" />
-            </svg>
-          ) : (
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-              <path d="M8 5.14v14l11-7-11-7z" />
-            </svg>
-          )}
-        </button>
-      )}
     </>
   )
 }
