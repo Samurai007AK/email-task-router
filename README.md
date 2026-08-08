@@ -8,6 +8,9 @@
 - **Frontend**: https://email-task-router-one.vercel.app
 - **GitHub**: https://github.com/Samurai007AK/email-task-router
 
+> 📋 **Before submitting**: follow [VERIFY.md](VERIFY.md) — the 5-minute pre-submission
+> checklist (warm-up ping, freeze Render, endpoint + chat-trap checks).
+
 ---
 
 ## What This Does
