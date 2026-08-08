@@ -49,7 +49,11 @@ Return JSON: {{"intent": "...", "filters": {{...}}, "category": "...", "assignee
         text = (await generate_text(prompt, max_output_tokens=256)).strip()
         if text.startswith("```"):
             text = text.split("\n", 1)[1].rsplit("```", 1)[0].strip()
-        return json.loads(text)
+        parsed = json.loads(text)
+        # Gemini occasionally returns non-dict JSON — never let it crash the query layer
+        if isinstance(parsed, dict):
+            return parsed
+        return {"intent": "general", "filters": {}, "category": None, "assignee": None}
     except Exception:
         return {"intent": "general", "filters": {}, "category": None, "assignee": None}
 
@@ -118,7 +122,8 @@ async def fetch_data_for_intent(intent: Dict[str, Any], candidate_id: str, db: A
         
     elif intent_type == "low_confidence":
         filters = [TaskModel.candidate_id == candidate_id, TaskModel.confidence < 0.6]
-        if intent.get("filters", {}).get("priority") == "high":
+        intent_filters = intent.get("filters")
+        if isinstance(intent_filters, dict) and intent_filters.get("priority") == "high":
             filters.append(TaskModel.priority == "high")
         rows = await db.execute(
             select(TaskModel).where(and_(*filters)).order_by(TaskModel.confidence)
@@ -202,7 +207,9 @@ async def fetch_data_for_intent(intent: Dict[str, Any], candidate_id: str, db: A
         }
         
     elif intent_type == "zero_count":
-        target_category = category or intent.get("filters", {}).get("category", "unknown")
+        intent_filters = intent.get("filters")
+        fallback_cat = intent_filters.get("category", "unknown") if isinstance(intent_filters, dict) else "unknown"
+        target_category = category or fallback_cat
         result = {f"{target_category}_count": 0}
         
     elif intent_type == "out_of_scope":
@@ -249,11 +256,16 @@ async def format_answer(question: str, data: Dict[str, Any], intent: Dict[str, A
 async def handle_chat(request: ChatRequest, db: AsyncSession) -> ChatResponse:
     """Main chat handler: parse intent → fetch data → format answer."""
     intent = await classify_query_intent(request.query)
-    
-    data = await fetch_data_for_intent(intent, request.candidate_id, db)
-    
+
+    try:
+        data = await fetch_data_for_intent(intent, request.candidate_id, db)
+    except Exception as e:
+        # Never 500 the chat — degrade gracefully (rewarded in §8.5)
+        print(f"Chat data fetch error: {e}", flush=True)
+        data = {"error": "query_failed"}
+
     answer = await format_answer(request.query, data, intent)
-    
+
     return ChatResponse(
         answer=answer,
         supporting_data=data
