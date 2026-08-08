@@ -128,4 +128,4 @@ Each email was labelled with:
 
 ---
 
-*Generated: 2026-08-08 | Candidate: priya.sharma@gmail.com*
+*Generated: 2026-08-08 | Candidate: arijitkonar16@gmail.com*

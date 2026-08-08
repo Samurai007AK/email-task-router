@@ -35,7 +35,7 @@ ALUMNX AI Labs receives hundreds of B2B emails daily — RFPs, partnership propo
 ### Key Requirements
 - Must use **Gemini API** (not OpenAI) — confirmed in problem statement
 - Must use **SQLite** with WAL mode
-- Must have **candidate_id** isolation (`priya.sharma@gmail.com`)
+- Must have **candidate_id** isolation (`arijitkonar16@gmail.com`)
 - Must support **idempotent ingestion** (duplicate emails ignored)
 - Must support **thread reconciliation** (email replies update existing tasks)
 - Must have **dedup on source_email_id**
@@ -133,7 +133,7 @@ GET /users
 
 ### 3. Task API
 ```
-GET /tasks?candidate_id=priya.sharma@gmail.com
+GET /tasks?candidate_id=arijitkonar16@gmail.com
 → [{"task_id": "tsk_abc123", "title": "...", ...}]
 ```
 
@@ -141,7 +141,7 @@ GET /tasks?candidate_id=priya.sharma@gmail.com
 ```
 POST /ingest
 Body: {
-  "candidate_id": "priya.sharma@gmail.com",
+  "candidate_id": "arijitkonar16@gmail.com",
   "emails": [
     {
       "email_id": "em_001",
@@ -165,13 +165,13 @@ Body: {
 ### 5. Chat API
 ```
 POST /api/chat
-Body: {"query": "What tasks are pending?", "candidate_id": "priya.sharma@gmail.com"}
+Body: {"query": "What tasks are pending?", "candidate_id": "arijitkonar16@gmail.com"}
 → {"answer": "...", "supporting_data": [...]}
 ```
 
 ### 6. Stats API
 ```
-GET /api/stats?candidate_id=priya.sharma@gmail.com
+GET /api/stats?candidate_id=arijitkonar16@gmail.com
 → {"total_tasks": 10, "by_assignee": {...}, "by_priority": {...}, ...}
 ```
 
@@ -301,7 +301,7 @@ curl https://email-task-router.onrender.com/users
 curl -X POST https://email-task-router.onrender.com/ingest \
   -H "Content-Type: application/json" \
   -d '{
-    "candidate_id": "priya.sharma@gmail.com",
+    "candidate_id": "arijitkonar16@gmail.com",
     "emails": [
       {
         "email_id": "em_test_001",
@@ -323,19 +323,19 @@ curl -X POST https://email-task-router.onrender.com/ingest \
 
 ### 4. Check Tasks
 ```
-curl "https://email-task-router.onrender.com/tasks?candidate_id=priya.sharma@gmail.com"
+curl "https://email-task-router.onrender.com/tasks?candidate_id=arijitkonar16@gmail.com"
 ```
 
 ### 5. Chat Query
 ```bash
 curl -X POST https://email-task-router.onrender.com/api/chat \
   -H "Content-Type: application/json" \
-  -d '{"query": "What tasks are assigned to Aarti?", "candidate_id": "priya.sharma@gmail.com"}'
+  -d '{"query": "What tasks are assigned to Aarti?", "candidate_id": "arijitkonar16@gmail.com"}'
 ```
 
 ### 6. Stats
 ```
-curl "https://email-task-router.onrender.com/api/stats?candidate_id=priya.sharma@gmail.com"
+curl "https://email-task-router.onrender.com/api/stats?candidate_id=arijitkonar16@gmail.com"
 ```
 
 ---
@@ -372,4 +372,4 @@ curl "https://email-task-router.onrender.com/api/stats?candidate_id=priya.sharma
 ---
 
 *Last updated: August 8, 2026*
-*Built by: Priya Sharma (priya.sharma@gmail.com)*
+*Built by: Arijit Konar (arijitkonar16@gmail.com)*

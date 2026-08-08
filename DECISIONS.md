@@ -110,4 +110,4 @@ Implement a sender-domain reputation system: build a lookup table of known vendo
 
 ---
 
-*Generated: 2026-08-08 | Candidate: priya.sharma@gmail.com*
+*Generated: 2026-08-08 | Candidate: arijitkonar16@gmail.com*

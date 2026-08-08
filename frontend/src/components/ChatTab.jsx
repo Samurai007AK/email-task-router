@@ -3,7 +3,7 @@ import ShimmerButton from './ui/ShimmerButton'
 import SpotlightCard from './ui/SpotlightCard'
 import { IconSend, IconRobot, IconSparkles } from './ui/Icons'
 
-const CANDIDATE_ID = 'priya.sharma@gmail.com'
+const CANDIDATE_ID = 'arijitkonar16@gmail.com'
 
 const SAMPLE_QUESTIONS = [
   'How many emails this batch were proposal or RFP-related?',

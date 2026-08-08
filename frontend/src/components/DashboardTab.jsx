@@ -11,7 +11,7 @@ import {
   IconZap,
 } from './ui/Icons'
 
-const CANDIDATE_ID = 'priya.sharma@gmail.com'
+const CANDIDATE_ID = 'arijitkonar16@gmail.com'
 
 const ASSIGNEE_STYLES = {
   u_aarti: 'border-purple-400/30 bg-purple-500/15 text-purple-300',

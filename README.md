@@ -1,6 +1,6 @@
 # Email Task Router — ALUMNX AI LABS FDE Intern Hiring Challenge
 
-**candidate_id**: priya.sharma@gmail.com
+**candidate_id**: arijitkonar16@gmail.com
 
 ## Deployed URLs
 
@@ -132,7 +132,7 @@ GEMINI_MODEL=                             # optional; empty = automatic fallback
 OLLAMA_API_KEY=your_ollama_api_key_here   # primary provider (recommended)
 OLLAMA_MODEL=gemma4:31b                   # optional; empty = gemma4:31b
 OLLAMA_BASE_URL=https://ollama.com/v1     # optional; OpenAI-compatible endpoint
-CANDIDATE_ID=priya.sharma@gmail.com
+CANDIDATE_ID=arijitkonar16@gmail.com
 DATABASE_URL=sqlite+aiosqlite:///./data/tasks.db
 CORS_ORIGINS=["https://email-task-router-one.vercel.app"]
 ```

@@ -433,7 +433,7 @@ function IngestTab({ apiBase, onIngestResult }) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          candidate_id: 'priya.sharma@gmail.com',
+          candidate_id: 'arijitkonar16@gmail.com',
           emails: batch,
         }),
       })
