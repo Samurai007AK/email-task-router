@@ -129,13 +129,17 @@ async def classify_email(email_data: dict) -> dict:
 
     cleaned_body = email_data.get("cleaned_body", email_data.get("body", ""))
 
-    prompt = CLASSIFICATION_PROMPT.format(
-        from_name=email_data.get("from_name", ""),
-        from_email=email_data.get("from_email", ""),
-        to=email_data.get("to", ""),
-        subject=email_data.get("subject", ""),
-        received_at=email_data.get("received_at", ""),
-        cleaned_body=cleaned_body[:3000]
+    # NOTE: use .replace(), NOT .format() — the prompt examples contain literal
+    # JSON braces ({"assignee_id": ...}) which .format() would interpret as fields
+    # and raise KeyError (e.g. '"assignee_id"')
+    prompt = (
+        CLASSIFICATION_PROMPT
+        .replace("{from_name}", email_data.get("from_name", ""))
+        .replace("{from_email}", email_data.get("from_email", ""))
+        .replace("{to}", email_data.get("to", ""))
+        .replace("{subject}", email_data.get("subject", ""))
+        .replace("{received_at}", email_data.get("received_at", ""))
+        .replace("{cleaned_body}", cleaned_body[:3000])
     )
 
     try:
