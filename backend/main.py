@@ -114,7 +114,7 @@ async def get_users():
     return TeamRoster(team=[TeamMember(**m) for m in TEAM_ROSTER])
 
 
-@app.post("/tasks", response_model=TaskResponse)
+@app.post("/tasks", response_model=TaskResponse, status_code=201)
 async def create_task(request: Request, db: AsyncSession = Depends(get_db)):
     try:
         body = await request.json()

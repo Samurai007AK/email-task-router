@@ -34,10 +34,11 @@ Possible intents:
 - count_by_assignee: count tasks by assignee
 - filter_triage: show triage tasks
 - spurious_rate: calculate spurious/skipped rate
-- low_confidence: find low confidence tasks
+- low_confidence: find low confidence tasks (if the question ALSO mentions high priority, set filters: {"priority": "high"})
 - high_priority: find high priority tasks
 - total_deal_value: sum deal values
 - thread_updates: find threads updated multiple times
+- marketing_vs_spam: distinguish routed marketing tasks from skipped vendor spam that used marketing-like language
 - zero_count: check if a category has zero matches
 - out_of_scope: user wants to take an action (send email, create task)
 - general: general question about the data
@@ -86,7 +87,15 @@ async def fetch_data_for_intent(intent: Dict[str, Any], candidate_id: str, db: A
         result = {
             "triage_count": len(tasks),
             "triage_task_ids": [t.task_id for t in tasks],
-            "triage_details": [{"task_id": t.task_id, "title": t.title, "confidence": t.confidence} for t in tasks]
+            "triage_details": [
+                {
+                    "task_id": t.task_id,
+                    "title": t.title,
+                    "confidence": t.confidence,
+                    "reason": (t.description or "")[:200],
+                }
+                for t in tasks
+            ]
         }
         
     elif intent_type == "spurious_rate":
@@ -108,15 +117,38 @@ async def fetch_data_for_intent(intent: Dict[str, Any], candidate_id: str, db: A
         }
         
     elif intent_type == "low_confidence":
+        filters = [TaskModel.candidate_id == candidate_id, TaskModel.confidence < 0.6]
+        if intent.get("filters", {}).get("priority") == "high":
+            filters.append(TaskModel.priority == "high")
         rows = await db.execute(
-            select(TaskModel)
-            .where(and_(TaskModel.candidate_id == candidate_id, TaskModel.confidence < 0.6))
-            .order_by(TaskModel.confidence)
+            select(TaskModel).where(and_(*filters)).order_by(TaskModel.confidence)
         )
         tasks = rows.scalars().all()
         result = {
-            "matches": [{"task_id": t.task_id, "confidence": t.confidence, "title": t.title} for t in tasks],
+            "matches": [
+                {"task_id": t.task_id, "confidence": t.confidence, "title": t.title, "priority": t.priority}
+                for t in tasks
+            ],
             "count": len(tasks)
+        }
+
+    elif intent_type == "marketing_vs_spam":
+        marketing_count = await db.execute(
+            select(func.count(TaskModel.id)).where(and_(
+                TaskModel.candidate_id == candidate_id,
+                TaskModel.category == "marketing",
+            ))
+        )
+        spam_lookalike_count = await db.execute(
+            select(func.count(EmailModel.id)).where(and_(
+                EmailModel.candidate_id == candidate_id,
+                EmailModel.is_skipped == True,
+                EmailModel.skip_reason == "vendor_spam",
+            ))
+        )
+        result = {
+            "marketing": marketing_count.scalar() or 0,
+            "skipped_marketing_lookalike_spam": spam_lookalike_count.scalar() or 0,
         }
         
     elif intent_type == "high_priority":

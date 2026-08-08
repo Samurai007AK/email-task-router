@@ -3,7 +3,7 @@
 ## 1. Gemini Rate Limits and Retries
 
 ### Decision
-Implemented exponential backoff with jitter for Gemini API rate limits (429 errors). Used a semaphore-based concurrency limiter (max 5 concurrent calls) and added 1-second delay between emails in a batch. Model: Gemini 2.5 Flash (10 RPM free tier).
+Implemented exponential backoff with jitter for Gemini API rate limits (429 errors), honouring Google's `RetryInfo.retryDelay` with a bounded 30s cap and 3 attempts per model. Added a 1-second delay between emails in a batch. Because `gemini-2.5-flash` is retired for new accounts (404), the client uses a model fallback chain — newer models first, moving to the next on 404 — with an optional `GEMINI_MODEL` env pin. On total failure the email falls back to u_triage rather than being dropped (a dropped email is worse than a slow one).
 
 ### Tradeoff
 - **Chose**: Async semaphore + exponential backoff (base=2s, max=3 retries, jitter=0-1s)

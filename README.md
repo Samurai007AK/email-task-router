@@ -125,11 +125,17 @@ Frontend runs at http://localhost:5173
 ## Environment Variables
 
 ```bash
-# .env
-GEMINI_API_KEY=your_gemini_api_key_here
+# .env (template in backend/.env.example)
+GEMINI_API_KEY=your_gemini_api_key_here   # required
+GEMINI_MODEL=                             # optional; empty = automatic fallback chain
 CANDIDATE_ID=priya.sharma@gmail.com
 DATABASE_URL=sqlite+aiosqlite:///./data/tasks.db
+CORS_ORIGINS=["https://email-task-router-one.vercel.app"]
 ```
+
+> **Model note**: `gemini-2.5-flash` is retired for new accounts. The backend tries a
+> fallback chain (newer models first) and retries on 429 with Google's suggested delay.
+> Set `GEMINI_MODEL` to pin one, e.g. `GEMINI_MODEL=gemini-3-flash`.
 
 ---
 

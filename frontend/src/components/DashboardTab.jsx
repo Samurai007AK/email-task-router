@@ -76,7 +76,9 @@ function DashboardTab({ apiBase }) {
     setRefreshing(true)
     try {
       const [tasksRes, statsRes] = await Promise.all([
-        fetch(`${apiBase}/tasks?candidate_id=${CANDIDATE_ID}`),
+        // Use the backend's /api/tasks wrapper, NOT the raw Task API (§7.2:
+        // the browser should never talk to the Task API directly)
+        fetch(`${apiBase}/api/tasks?candidate_id=${CANDIDATE_ID}`),
         fetch(`${apiBase}/api/stats?candidate_id=${CANDIDATE_ID}`),
       ])
       const tasksData = await tasksRes.json()
