@@ -14,7 +14,7 @@
 
 An AI-powered email-to-task routing system that:
 1. **Ingests** messy business emails (HTML, reply chains, Hinglish, mixed languages)
-2. **Classifies** them using Gemini LLM into categories (RFP, marketing, finance, etc.)
+2. **Classifies** them using an LLM (Gemma 4 31B on Ollama Cloud by default, Gemini fallback) into categories (RFP, marketing, finance, etc.)
 3. **Routes** tasks to the right team member based on business rules
 4. **Provides** a conversational interface for ops teams to query processed data
 
@@ -33,7 +33,7 @@ An AI-powered email-to-task routing system that:
 # 1. Clone and setup backend
 cd email-task-router/backend
 pip install -r requirements.txt
-cp .env.example .env  # Add your GEMINI_API_KEY
+cp .env.example .env  # Add GEMINI_API_KEY and/or OLLAMA_API_KEY
 
 # 2. Run backend
 uvicorn main:app --reload
@@ -73,8 +73,9 @@ Frontend runs at http://localhost:5173
                               └────────┬────────┘
                                        │
                               ┌────────▼────────┐
-                              │  Gemini 2.5     │
-                              │  Flash API      │
+                              │ Gemma 4 31B     │
+                              │ (Ollama Cloud)  │
+                              │ + Gemini fallb. │
                               └─────────────────┘
 ```
 
@@ -126,16 +127,21 @@ Frontend runs at http://localhost:5173
 
 ```bash
 # .env (template in backend/.env.example)
-GEMINI_API_KEY=your_gemini_api_key_here   # required
+GEMINI_API_KEY=your_gemini_api_key_here   # fallback provider
 GEMINI_MODEL=                             # optional; empty = automatic fallback chain
+OLLAMA_API_KEY=your_ollama_api_key_here   # primary provider (recommended)
+OLLAMA_MODEL=gemma4:31b                   # optional; empty = gemma4:31b
+OLLAMA_BASE_URL=https://ollama.com/v1     # optional; OpenAI-compatible endpoint
 CANDIDATE_ID=priya.sharma@gmail.com
 DATABASE_URL=sqlite+aiosqlite:///./data/tasks.db
 CORS_ORIGINS=["https://email-task-router-one.vercel.app"]
 ```
 
-> **Model note**: `gemini-2.5-flash` is retired for new accounts. The backend tries a
-> fallback chain (newer models first) and retries on 429 with Google's suggested delay.
-> Set `GEMINI_MODEL` to pin one, e.g. `GEMINI_MODEL=gemini-3-flash`.
+> **LLM provider**: When `OLLAMA_API_KEY` is set, classification and chat phrasing run
+> on **Gemma 4 31B via Ollama Cloud** (OpenAI-compatible endpoint, generous free tier).
+> If Ollama is down or unconfigured, the backend falls back to the Gemini fallback chain
+> (newer models first, 429 retries with the provider's suggested delay). Either key alone
+> is enough to run; set `GEMINI_MODEL` or `OLLAMA_MODEL` to pin specific models.
 
 ---
 
@@ -149,7 +155,7 @@ email-task-router/
 │   ├── schemas.py           # Pydantic schemas
 │   ├── database.py          # DB engine and session
 │   ├── config.py            # Settings from env
-│   ├── classification.py    # Gemini classification engine
+│   ├── classification.py    # LLM classification engine (Ollama/Gemma + Gemini fallback)
 │   ├── email_parser.py      # HTML cleaning, currency parsing
 │   ├── ingest.py            # Batch processing pipeline
 │   ├── chat.py              # Conversational interface backend
