@@ -50,11 +50,13 @@ async def lifespan(app: FastAPI):
     yield
 
 async def keep_alive():
+    port = os.environ.get("PORT", "8000")
+    url = f"http://localhost:{port}/health"
     while True:
         await asyncio.sleep(300)
         try:
             async with httpx.AsyncClient() as client:
-                await client.get("http://localhost:8000/health", timeout=5.0)
+                await client.get(url, timeout=5.0)
         except Exception:
             pass
 

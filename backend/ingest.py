@@ -126,8 +126,8 @@ async def process_emails(emails: List[EmailInput], candidate_id: str, db: AsyncS
 
                     tasks_updated += 1
                 else:
-                task_id = generate_task_id()
-                new_task = TaskModel(
+                    task_id = generate_task_id()
+                    new_task = TaskModel(
                         task_id=task_id,
                         candidate_id=candidate_id,
                         source_email_id=email.email_id,
@@ -157,22 +157,22 @@ async def process_emails(emails: List[EmailInput], candidate_id: str, db: AsyncS
                     continue
 
                 task_id = generate_task_id()
-                    new_task = TaskModel(
-                        task_id=task_id,
-                        candidate_id=candidate_id,
-                        source_email_id=email.email_id,
-                        thread_id=email.thread_id,
-                        title=f"{classification.get('category', 'unknown')} - {email.subject[:100]}",
-                        description=stripped[:500],
-                        assignee_id=classification.get("assignee_id", "u_triage"),
-                        category=classification.get("category", "triage"),
-                        priority=classification.get("priority", "medium"),
-                        due_date=classification.get("due_date"),
-                        deal_value_inr=classification.get("deal_value_inr"),
-                        company_name=classification.get("company_name"),
-                        confidence=classification.get("confidence", 0.5),
-                        created_at=datetime.utcnow().isoformat()
-                    )
+                new_task = TaskModel(
+                    task_id=task_id,
+                    candidate_id=candidate_id,
+                    source_email_id=email.email_id,
+                    thread_id=email.thread_id,
+                    title=f"{classification.get('category', 'unknown')} - {email.subject[:100]}",
+                    description=stripped[:500],
+                    assignee_id=classification.get("assignee_id", "u_triage"),
+                    category=classification.get("category", "triage"),
+                    priority=classification.get("priority", "medium"),
+                    due_date=classification.get("due_date"),
+                    deal_value_inr=classification.get("deal_value_inr"),
+                    company_name=classification.get("company_name"),
+                    confidence=classification.get("confidence", 0.5),
+                    created_at=datetime.utcnow().isoformat()
+                )
                 db.add(new_task)
 
                 if email.thread_id:
